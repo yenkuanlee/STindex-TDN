@@ -12,19 +12,19 @@ def on_publish(client, userdata, mid):
     print("mid: "+str(mid))
 
 def distance(lon1, lat1, lon2, lat2):
-    """
-    Calculate the great circle distance between two points 
-    on the earth (specified in decimal degrees)
-    """
-    # convert decimal degrees to radians 
-    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
-    # haversine formula 
-    dlon = lon2 - lon1 
-    dlat = lat2 - lat1 
-    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-    c = 2 * asin(sqrt(a)) 
-    m = 6367 * c * 1000
-    return m
+	"""
+	Calculate the great circle distance between two points 
+	on the earth (specified in decimal degrees)
+	"""
+	# convert decimal degrees to radians 
+	lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+	# haversine formula 
+	dlon = lon2 - lon1 
+	dlat = lat2 - lat1 
+	a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+	c = 2 * asin(sqrt(a)) 
+	m = 6367 * c * 1000
+	return m
 		
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
@@ -59,15 +59,38 @@ def on_message(client, userdata, msg):
 			if distance(Lon,Lat,EventDict[x]["Lon"],EventDict[x]["Lat"]) <= (2*D) :
 				Neighber.add(x)
 		
+		results = dict()
+
+
 		# Get L2
-		L2 = set()
+		L2 = list()
 		for x in Neighber:
-			for y in Neighber:
-				if x > y : 
-					if y in EventDict[x]["Neighber"]:
-						L2.add((x,y))
-					
-				
+			for y in EventDict[x]["Neighber"]:
+				if y in Neighber :
+					L2.append(list([y,x]))	# from small to large
+		results[0] = L2
+
+
+		# Get Ln
+		for x in Neighber:
+			 for i in range(len(EventDict[x]["results"])):
+				for y in EventDict[x]["results"][i]:
+					Ltmp = list()
+					Lflag = False
+					for z in y:
+						if z in Neighber:
+							Ltmp.append(z)
+						else:
+							Lflag = True
+							break
+					if Lflag : continue
+					Ltmp.append(x)
+					if i+1 not in results:
+						results[i+1] = list()
+					else:
+						results[i+1].append(Ltmp)
+
+
 
 		# Add To EventDict
 		Eid = long(str(time.time()).replace(".",""))
@@ -76,6 +99,7 @@ def on_message(client, userdata, msg):
 		EventDict[Eid]["Lat"] = Lat
 		EventDict[Eid]["Time"] = Time
 		EventDict[Eid]["Neighber"] = Neighber
+		EventDict[Eid]["results"] = results
 
 		print EventDict
 
