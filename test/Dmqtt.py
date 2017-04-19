@@ -101,7 +101,7 @@ def on_message(client, userdata, msg):
 	elif msg.topic=='STevent':
 		# Rule
 		T = 1
-		D = 100
+		D = 1000
 		N = 2
 
 		# Initial
@@ -186,7 +186,7 @@ def on_message(client, userdata, msg):
 					R = a*b*c/(4*math.sqrt(S*(S-a)*(S-b)*(S-c)))
 					if R > D:
 						continue
-					Mcc[(y,x,Eid)] = set(y,x,Eid)	# 3-point Mcc
+					Mcc[(y,x,Eid)] = set([y,x,Eid])	# 3-point Mcc
 
 		print "KEVIN Eid : "+str(Eid)
 		#print "KEVIN DistanceDict : "
@@ -206,15 +206,19 @@ def on_message(client, userdata, msg):
 			BlackNumber = Pnumber - RedNumber
 			if BlackNumber == 0 :
 				print mcc
+				print Mcc[mcc]
 				continue
 			if RedNumber / BlackNumber >= N:
 				print mcc
+				print Mcc[mcc]
 
 		# Get Score of Mcc about Eid's Neighber
+		MccPop = set()
 		for x in Neighber:
 			for mcc in EventDict[x]["Mcc"]:
 				if mcc[0] not in RedIndex and mcc[0] not in BlackIndex :
-					EventDict[x]["Mcc"].pop(mcc,None)
+					#EventDict[x]["Mcc"].pop(mcc,None)
+					MccPop.add((x,mcc))
 					continue
 				if CheckPointInMcc(Eid,mcc):
 					EventDict[x]["Mcc"][mcc].add(Eid)
@@ -225,11 +229,14 @@ def on_message(client, userdata, msg):
 				BlackNumber = Pnumber - RedNumber
 				if BlackNumber == 0:
 					print mcc
+					print EventDict[x]["Mcc"][mcc]
 					continue
 				if RedNumber / BlackNumber >= N:
 					print mcc
+					EventDict[x]["Mcc"][mcc]
 				
-
+		for x in MccPop:
+			EventDict[x[0]]["Mcc"].pop(x[1],None)
 
 		'''
 		# Get L2

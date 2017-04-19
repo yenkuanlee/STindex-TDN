@@ -10,4 +10,4 @@ client.on_publish = on_publish
 client.connect(sys.argv[1], 1883)
 
 
-(rc, mid) = client.publish(sys.argv[2], sys.argv[3], qos=1)
+(rc, mid) = client.publish(sys.argv[2], sys.argv[3], qos=0)
