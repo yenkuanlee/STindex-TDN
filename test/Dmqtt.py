@@ -28,16 +28,22 @@ def distance(lon1, lat1, lon2, lat2):
 	m = 6367 * c * 1000
 	return m
 
-'''
+
 def CheckPointInMcc(p,Mcc):
 	global DistanceDict
+	for x in Mcc:
+		if DistanceDict[(x,p)] not in DistanceDict:
+			return False
 	if len(Mcc) == 2:
+		if DistanceDict[(Mcc[0],p)] > DistanceDict[(Mcc[0],Mcc[1])] or DistanceDict[(Mcc[1],p)] > DistanceDict[(Mcc[0],Mcc[1])] :
+			return False
 		if DistanceDict[(Mcc[0],p)]**2 + DistanceDict[(Mcc[1],p)]**2 > DistanceDict[(Mcc[0],Mcc[1])]**2:
 			return False
-		else return True
+		return True
 	elif len(Mcc) == 3:
-	else return "ERROR"
+		# KEVIN DO DO
 
+'''
 def GetNewMcc(p,OldMcc):
 	global DistanceDict
 	if len(Mcc) == 2:
@@ -72,27 +78,36 @@ def on_message(client, userdata, msg):
 
 		# Generate Red, Black and Neighber
 		for x in EventDict:
-			Tdiff = Time - EventDict[x]["Time"]	############################
+			Rflag = False
+			Bflag = False
+			#Tdiff = Time - EventDict[x]["Time"]	############################
+			Tdiff = TimeDifference(Time,EventDict[x]["Time"]) #######################
 			if Tdiff <= 1 :
-				RedIndex.add(x)
+				#RedIndex.add(x)
+				Rflag = True
 			elif Tdiff <= 2 and Tdiff > 1 :
-				BlackIndex.add(x)
+				#BlackIndex.add(x)
+				Bflag = True
 			else :
 				EventDict.pop(x,None)
 				continue
 			DistanceTmp = distance(Lon,Lat,EventDict[x]["Lon"],EventDict[x]["Lat"]) <= (2*D)
 			if DistanceTmp <= (2*D) :
+				if Rflag:
+					RedIndex.add(x)
+				if Bflag:
+					BlackIndex.add(x)
 				Neighber.add(x)
 				DistanceDict[(x,Eid)] = DistanceTmp	# from small to large
-		
-		results = dict()
+				DistanceDict[(Eid,x)] = DistanceTmp	# from large to small
 
 
-		# Get L2 and L3
-		L2 = list()
-		L3 = list()
+
+		# Get Mcc about Eid (2-point and 3-point)
+		Mcc = dict()
+
 		for x in Neighber:
-			L2.append(set([x,Eid]),(x,Eid))
+			Mcc[(x,Eid)] = set([x,Eid])	# 2-point Mcc
 			for y in EventDict[x]["Neighber"]: # Eid > x > y
 				if y not in Neighber:
 					continue
@@ -110,19 +125,46 @@ def on_message(client, userdata, msg):
 					Emax = c
 					Emin = (a,c)
 					diameter = (y,x)
+
 				if Emin[0]**2 + Emin[1]**2 <= Emax**2:
-					L3.append(set(y,x,Eid),diameter,Emax/2)
+					Mcc[diameter] = set([y,x,Eid])	# 3 point in 2-point Mcc
 				else:
 					S = (a+b+c)/2
 					R = a*b*c/(4*math.sqrt(S*(S-a)*(S-b)*(S-c)))
-					if R > 2*D:
+					if R > D:
 						continue
-					L3.append(set(y,x,Eid),(y,x,Eid),R)
+					Mcc[(y,x,Eid)] = set(y,x,Eid)	# 3-point Mcc
 
-		#results[0] = L2
-		#results[1] = L3
+
+		for p in Neighber:
+			for mcc in Mcc:
+				if CheckPointInMcc(p,mcc):
+					Mcc[mcc].add(p)
 		
-		# L3 to Ln
+		# Get Score of Mcc about Eid
+		for mcc in Mcc:
+			Pnumber = len(Mcc[mcc])
+			RedNumber = len(Mcc[mcc]&RedIndex)
+			BlackNumber = Pnumber - RedNumber
+			if RedNumber / BlackNumber >= N:
+				print mcc
+
+		# Get Score of Mcc about Eid's Neighber
+		for x in Neighber:
+			for mcc in EventDict[x][Mcc]:
+				if mcc[0] not in RedIndex and mcc[0] not in BlackIndex :
+					EventDict[x][Mcc].pop(mcc,None)
+					continue
+				if CheckPointInMcc(Eid,mcc):
+					EventDict[x][Mcc][mcc].add(Eid)
+				else:
+					continue
+				Pnumber = len(EventDict[x][Mcc][mcc])
+				RedNumber = len(EventDict[x][Mcc][mcc]&RedIndex)
+				BlackNumber = Pnumber - RedNumber
+				if RedNumber / BlackNumber >= N:
+					print mcc
+				
 
 
 		'''
@@ -168,7 +210,7 @@ def on_message(client, userdata, msg):
 		EventDict[Eid]["Lat"] = Lat
 		EventDict[Eid]["Time"] = Time
 		EventDict[Eid]["Neighber"] = Neighber
-		EventDict[Eid]["results"] = results
+		EventDict[Eid]["Mcc"] = Mcc
 
 		print EventDict
 
