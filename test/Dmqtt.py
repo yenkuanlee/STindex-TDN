@@ -1,6 +1,8 @@
 import paho.mqtt.client as mqtt
 import time
+import datetime
 import math
+from math import radians, cos, sin, asin, sqrt
 
 EventDict = dict()
 DistanceDict = dict()
@@ -29,10 +31,19 @@ def distance(lon1, lat1, lon2, lat2):
 	return m
 
 
+def TimeDifference(TimeA,TimeB):
+	tmpA = datetime.datetime.strptime(TimeA, "%Y/%m/%d").date()
+	tmpB = datetime.datetime.strptime(TimeB, "%Y/%m/%d").date()
+	DateDelta = ( tmpA - tmpB ).days
+	if DateDelta < 0:
+		DateDelta = (-1) * DateDelta
+	return DateDelta
+	
+
 def CheckPointInMcc(p,Mcc):
 	global DistanceDict
 	for x in Mcc:
-		if DistanceDict[(x,p)] not in DistanceDict:
+		if (x,p) not in DistanceDict:
 			return False
 	if len(Mcc) == 2:
 		if DistanceDict[(Mcc[0],p)] > DistanceDict[(Mcc[0],Mcc[1])] or DistanceDict[(Mcc[1],p)] > DistanceDict[(Mcc[0],Mcc[1])] :
@@ -41,7 +52,37 @@ def CheckPointInMcc(p,Mcc):
 			return False
 		return True
 	elif len(Mcc) == 3:
-		# KEVIN DO DO
+		# ABC vs P
+		a = DistanceDict[(p,Mcc[0])] # PA
+		b = DistanceDict[(p,Mcc[1])] # PB
+		c = DistanceDict[(p,Mcc[2])] # PC
+		Pmin = a
+		Pmax = (b,c)
+		brother = Mcc[0]
+		Bmax = (DistanceDict[(Mcc[0],Mcc[1])],DistanceDict[(Mcc[0],Mcc[2])])
+		Base = DistanceDict[(Mcc[1],Mcc[2])]
+		
+		if b < Pmin:
+			Pmin = b
+			Pmax = (a,c)
+			brother = Mcc[1]
+			Bmax = (DistanceDict[(Mcc[0],Mcc[1])],DistanceDict[(Mcc[1],Mcc[2])])
+			Base = DistanceDict[(Mcc[0],Mcc[2])]
+		if c < Pmin:
+			Pmin = c
+			Pmax = (a,b)
+			brother = Mcc[2]
+			Bmax = (DistanceDict[(Mcc[0],Mcc[2])],DistanceDict[(Mcc[1],Mcc[2])])
+			Base = DistanceDict[(Mcc[0],Mcc[1])]
+
+		if Pmax[0]**2 + Pmax[1]**2 <= Base**2:	# degree more than 90
+			return True
+
+		CosP = (Pmax[0]**2 + Pmax[1]**2 - Base**2) / (2*Pmax[0]*Pmax[1])
+		CosB = (Bmax[0]**2 + Bmax[1]**2 - Base**2) / (2*Bmax[0]*Bmax[1])
+		if CosP <= CosB :
+			return True
+		return False
 
 '''
 def GetNewMcc(p,OldMcc):
@@ -70,17 +111,17 @@ def on_message(client, userdata, msg):
 		BlackIndex = set()
 		Neighber = set()
 		tmp = str(msg.payload).split("#")
-		Lon = tmp[0]
-		Lat = tmp[1]
+		Lon = float(tmp[0])
+		Lat = float(tmp[1])
 		Time = tmp[2]
 
 		Eid = long(str(time.time()).replace(".",""))
 
 		# Generate Red, Black and Neighber
+		PopList = list()
 		for x in EventDict:
 			Rflag = False
 			Bflag = False
-			#Tdiff = Time - EventDict[x]["Time"]	############################
 			Tdiff = TimeDifference(Time,EventDict[x]["Time"]) #######################
 			if Tdiff <= 1 :
 				#RedIndex.add(x)
@@ -89,9 +130,14 @@ def on_message(client, userdata, msg):
 				#BlackIndex.add(x)
 				Bflag = True
 			else :
-				EventDict.pop(x,None)
+				#EventDict.pop(x,None)
+				#print "KEVIN OLD POINT : "+str(x)
+				PopList.append(x)
 				continue
-			DistanceTmp = distance(Lon,Lat,EventDict[x]["Lon"],EventDict[x]["Lat"]) <= (2*D)
+
+			
+			DistanceTmp = distance(Lon,Lat,EventDict[x]["Lon"],EventDict[x]["Lat"])
+			#print "KEVIN DISTANCE : "+str(DistanceTmp)
 			if DistanceTmp <= (2*D) :
 				if Rflag:
 					RedIndex.add(x)
@@ -101,7 +147,14 @@ def on_message(client, userdata, msg):
 				DistanceDict[(x,Eid)] = DistanceTmp	# from small to large
 				DistanceDict[(Eid,x)] = DistanceTmp	# from large to small
 
-
+		Dpop = set()
+		for x in PopList:
+			del EventDict[x]
+			for y in DistanceDict:
+				if x in y:
+					Dpop.add(y)
+		for x in Dpop:
+			del DistanceDict[x]
 
 		# Get Mcc about Eid (2-point and 3-point)
 		Mcc = dict()
@@ -135,7 +188,12 @@ def on_message(client, userdata, msg):
 						continue
 					Mcc[(y,x,Eid)] = set(y,x,Eid)	# 3-point Mcc
 
-
+		print "KEVIN Eid : "+str(Eid)
+		#print "KEVIN DistanceDict : "
+		#print DistanceDict
+		#print "KEVIN NEIGHBER : "
+		#print Neighber
+		
 		for p in Neighber:
 			for mcc in Mcc:
 				if CheckPointInMcc(p,mcc):
@@ -146,22 +204,28 @@ def on_message(client, userdata, msg):
 			Pnumber = len(Mcc[mcc])
 			RedNumber = len(Mcc[mcc]&RedIndex)
 			BlackNumber = Pnumber - RedNumber
+			if BlackNumber == 0 :
+				print mcc
+				continue
 			if RedNumber / BlackNumber >= N:
 				print mcc
 
 		# Get Score of Mcc about Eid's Neighber
 		for x in Neighber:
-			for mcc in EventDict[x][Mcc]:
+			for mcc in EventDict[x]["Mcc"]:
 				if mcc[0] not in RedIndex and mcc[0] not in BlackIndex :
-					EventDict[x][Mcc].pop(mcc,None)
+					EventDict[x]["Mcc"].pop(mcc,None)
 					continue
 				if CheckPointInMcc(Eid,mcc):
-					EventDict[x][Mcc][mcc].add(Eid)
+					EventDict[x]["Mcc"][mcc].add(Eid)
 				else:
 					continue
-				Pnumber = len(EventDict[x][Mcc][mcc])
-				RedNumber = len(EventDict[x][Mcc][mcc]&RedIndex)
+				Pnumber = len(EventDict[x]["Mcc"][mcc])
+				RedNumber = len(EventDict[x]["Mcc"][mcc]&RedIndex)
 				BlackNumber = Pnumber - RedNumber
+				if BlackNumber == 0:
+					print mcc
+					continue
 				if RedNumber / BlackNumber >= N:
 					print mcc
 				
@@ -212,7 +276,7 @@ def on_message(client, userdata, msg):
 		EventDict[Eid]["Neighber"] = Neighber
 		EventDict[Eid]["Mcc"] = Mcc
 
-		print EventDict
+
 
 client = mqtt.Client()
 client.on_connect = on_connect

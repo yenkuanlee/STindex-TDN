@@ -14,5 +14,7 @@ def haversine(lon1, lat1, lon2, lat2):
     m = 6367 * c * 1000
     return m
 
-for i in range(1000000):
-    a = haversine(121,25,121,26)
+#for i in range(1000000):
+#    a = haversine(121,25,121,26)
+
+print haversine(121,25,121,26)
