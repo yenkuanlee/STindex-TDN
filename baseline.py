@@ -93,9 +93,10 @@ def GetNewMcc(p,OldMcc):
 		else:
 '''
 			
-		
+EEid = 0
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
+	global EEid
 	if msg.topic=='test':
 		print str(msg.payload)
 	elif msg.topic=='STevent':
@@ -115,7 +116,9 @@ def on_message(client, userdata, msg):
 		Lat = float(tmp[1])
 		Time = tmp[2]
 
-		Eid = long(str(time.time()).replace(".",""))
+		#Eid = long(str(time.time()).replace(".",""))
+		Eid = long(EEid)
+		EEid += 1
 
 		# Generate Red, Black and Neighber
 		PopList = list()
@@ -147,6 +150,7 @@ def on_message(client, userdata, msg):
 				DistanceDict[(x,Eid)] = DistanceTmp	# from small to large
 				DistanceDict[(Eid,x)] = DistanceTmp	# from large to small
 
+		RedIndex.add(Eid)
 		Dpop = set()
 		for x in PopList:
 			del EventDict[x]
@@ -159,34 +163,42 @@ def on_message(client, userdata, msg):
 		# Get Mcc about Eid (2-point and 3-point)
 		Mcc = dict()
 
-		for x in Neighber:
-			Mcc[(x,Eid)] = set([x,Eid])	# 2-point Mcc
-			for y in EventDict[x]["Neighber"]: # Eid > x > y
-				if y not in Neighber:
-					continue
-				a = DistanceDict[(x,Eid)]
-				b = DistanceDict[(y,Eid)]
-				c = DistanceDict[(y,x)]
-				Emax = a
-				Emin = (b,c)
-				diameter = (x,Eid)
-				if b > Emax:
-					Emax = b
-					Emin = (a,c)
-					diameter = (y,Eid)
-				if c > Emax:
-					Emax = c
-					Emin = (a,c)
-					diameter = (y,x)
-
-				if Emin[0]**2 + Emin[1]**2 <= Emax**2:
-					Mcc[diameter] = set([y,x,Eid])	# 3 point in 2-point Mcc
-				else:
-					S = (a+b+c)/2
-					R = a*b*c/(4*math.sqrt(S*(S-a)*(S-b)*(S-c)))
-					if R > D:
+		Neighber.add(Eid)
+		EventDict[Eid] = dict()
+		EventDict[Eid]["Neighber"] = Neighber
+		for eid in Neighber:
+			for x in Neighber:
+				if eid <= x : continue
+				Mcc[(x,eid)] = set([x,eid])	# 2-point Mcc
+				for y in EventDict[x]["Neighber"]: # eid > x > y
+					if y not in Neighber:
 						continue
-					Mcc[(y,x,Eid)] = set([y,x,Eid])	# 3-point Mcc
+					try:
+						a = DistanceDict[(x,eid)]
+						b = DistanceDict[(y,eid)]
+						c = DistanceDict[(y,x)]
+					except:
+						continue
+					Emax = a
+					Emin = (b,c)
+					diameter = (x,eid)
+					if b > Emax:
+						Emax = b
+						Emin = (a,c)
+						diameter = (y,eid)
+					if c > Emax:
+						Emax = c
+						Emin = (a,c)
+						diameter = (y,x)
+
+					if Emin[0]**2 + Emin[1]**2 <= Emax**2:
+						Mcc[diameter] = set([y,x,eid])	# 3 point in 2-point Mcc
+					else:
+						S = (a+b+c)/2
+						R = a*b*c/(4*math.sqrt(S*(S-a)*(S-b)*(S-c)))
+						if R > D:
+							continue
+						Mcc[(y,x,eid)] = set([y,x,eid])	# 3-point Mcc
 
 		print "KEVIN Eid : "+str(Eid)
 		#print "KEVIN DistanceDict : "
@@ -196,8 +208,11 @@ def on_message(client, userdata, msg):
 		
 		for p in Neighber:
 			for mcc in Mcc:
-				if CheckPointInMcc(p,mcc):
-					Mcc[mcc].add(p)
+				try:
+					if CheckPointInMcc(p,mcc):
+						Mcc[mcc].add(p)
+				except:
+					pass
 		
 		# Get Score of Mcc about Eid
 		for mcc in Mcc:
@@ -205,82 +220,27 @@ def on_message(client, userdata, msg):
 			RedNumber = len(Mcc[mcc]&RedIndex)
 			BlackNumber = Pnumber - RedNumber
 			if BlackNumber == 0 :
-				print mcc
-				print Mcc[mcc]
+				if Eid in Mcc[mcc]:
+					print mcc
+					print Mcc[mcc]
 				continue
 			if RedNumber / BlackNumber >= N:
-				print mcc
-				print Mcc[mcc]
-
-		# Get Score of Mcc about Eid's Neighber
-		MccPop = set()
-		for x in Neighber:
-			for mcc in EventDict[x]["Mcc"]:
-				if mcc[0] not in RedIndex and mcc[0] not in BlackIndex :
-					#EventDict[x]["Mcc"].pop(mcc,None)
-					MccPop.add((x,mcc))
-					continue
-				if CheckPointInMcc(Eid,mcc):
-					EventDict[x]["Mcc"][mcc].add(Eid)
-				else:
-					continue
-				Pnumber = len(EventDict[x]["Mcc"][mcc])
-				RedNumber = len(EventDict[x]["Mcc"][mcc]&RedIndex)
-				BlackNumber = Pnumber - RedNumber
-				if BlackNumber == 0:
+				if Eid in Mcc[mcc]:
 					print mcc
-					print EventDict[x]["Mcc"][mcc]
-					continue
-				if RedNumber / BlackNumber >= N:
-					print mcc
-					EventDict[x]["Mcc"][mcc]
-				
-		for x in MccPop:
-			EventDict[x[0]]["Mcc"].pop(x[1],None)
-
-		'''
-		# Get L2
-		L2 = list()
-		for x in Neighber:
-			for y in EventDict[x]["Neighber"]:
-				if y in Neighber :
-					# (EventSet,MCC)
-					L2.append(list([y,x]),(y,x))	# from small to large
-		results[0] = L2
+					print Mcc[mcc]
 
 
-		# Get Ln
-		for x in Neighber:
-			 for i in range(len(EventDict[x]["results"])):
-				for y in EventDict[x]["results"][i]:	# (EventSet,MCC)
-					Ltmp = list()
-					Lflag = False
-					for z in y[0]:
-						if z in Neighber:
-							Ltmp.append(z)
-						else:
-							Lflag = True
-							break
-					if Lflag : continue
-					Ltmp.append(x)
-					if i+1 not in results:
-						results[i+1] = list()
 
-					# Get MCC of Ltmp !!!
-					OldMcc = y[1]
-					NewMcc = GetMcc(x,OldMcc)	############################
-					results[i+1].append(Ltmp,NewMcc)
 
-		'''
 
 
 		# Add To EventDict
 
-		EventDict[Eid] = dict()
+		#EventDict[Eid] = dict()
 		EventDict[Eid]["Lon"] = Lon
 		EventDict[Eid]["Lat"] = Lat
 		EventDict[Eid]["Time"] = Time
-		EventDict[Eid]["Neighber"] = Neighber
+		#EventDict[Eid]["Neighber"] = Neighber
 		EventDict[Eid]["Mcc"] = Mcc
 
 

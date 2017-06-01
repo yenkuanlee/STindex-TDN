@@ -93,9 +93,10 @@ def GetNewMcc(p,OldMcc):
 		else:
 '''
 			
-		
+EEid = 0		
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
+	global EEid
 	if msg.topic=='test':
 		print str(msg.payload)
 	elif msg.topic=='STevent':
@@ -115,7 +116,9 @@ def on_message(client, userdata, msg):
 		Lat = float(tmp[1])
 		Time = tmp[2]
 
-		Eid = long(str(time.time()).replace(".",""))
+		#Eid = long(str(time.time()).replace(".",""))
+		Eid = long(EEid)
+		EEid += 1
 
 		# Generate Red, Black and Neighber
 		PopList = list()
@@ -147,6 +150,7 @@ def on_message(client, userdata, msg):
 				DistanceDict[(x,Eid)] = DistanceTmp	# from small to large
 				DistanceDict[(Eid,x)] = DistanceTmp	# from large to small
 
+		RedIndex.add(Eid)
 		Dpop = set()
 		for x in PopList:
 			del EventDict[x]
@@ -233,7 +237,7 @@ def on_message(client, userdata, msg):
 					continue
 				if RedNumber / BlackNumber >= N:
 					print mcc
-					EventDict[x]["Mcc"][mcc]
+					print EventDict[x]["Mcc"][mcc]
 				
 		for x in MccPop:
 			EventDict[x[0]]["Mcc"].pop(x[1],None)
@@ -247,8 +251,6 @@ def on_message(client, userdata, msg):
 					# (EventSet,MCC)
 					L2.append(list([y,x]),(y,x))	# from small to large
 		results[0] = L2
-
-
 		# Get Ln
 		for x in Neighber:
 			 for i in range(len(EventDict[x]["results"])):
@@ -265,12 +267,10 @@ def on_message(client, userdata, msg):
 					Ltmp.append(x)
 					if i+1 not in results:
 						results[i+1] = list()
-
 					# Get MCC of Ltmp !!!
 					OldMcc = y[1]
 					NewMcc = GetMcc(x,OldMcc)	############################
 					results[i+1].append(Ltmp,NewMcc)
-
 		'''
 
 
