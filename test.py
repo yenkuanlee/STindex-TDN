@@ -17,5 +17,5 @@ Tlist.sort(key=lambda tup: tup[3])
 
 for x in Tlist:
     #print x[0],x[1],x[2]
-    os.system("python Mmqtt.py 140.92.143.140 STevent "+x[0]+"#"+x[1]+"#"+x[2])
-    time.sleep(1)
+    os.system("python Mmqtt.py 140.92.143.212 STevent "+x[0]+"#"+x[1]+"#"+x[2])
+    #time.sleep(1)
