@@ -6,7 +6,7 @@ def on_publish(client, userdata, mid):
     print("mid: "+str(mid))
 
 client = paho.Client()
-client.on_publish = on_publish
+#client.on_publish = on_publish
 client.connect(sys.argv[1], 1883)
 
 

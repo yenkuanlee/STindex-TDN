@@ -100,6 +100,7 @@ def on_message(client, userdata, msg):
 	if msg.topic=='test':
 		print str(msg.payload)
 	elif msg.topic=='STevent':
+		print time.time()
 		# Rule
 		T = 1
 		D = 1000
@@ -200,7 +201,7 @@ def on_message(client, userdata, msg):
 							continue
 						Mcc[(y,x,eid)] = set([y,x,eid])	# 3-point Mcc
 
-		print "KEVIN Eid : "+str(Eid)
+		###print "KEVIN Eid : "+str(Eid)
 		#print "KEVIN DistanceDict : "
 		#print DistanceDict
 		#print "KEVIN NEIGHBER : "
