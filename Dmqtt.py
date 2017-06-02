@@ -188,7 +188,10 @@ def on_message(client, userdata, msg):
 					Mcc[diameter] = set([y,x,Eid])	# 3 point in 2-point Mcc
 				else:
 					S = (a+b+c)/2
-					R = a*b*c/(4*math.sqrt(S*(S-a)*(S-b)*(S-c)))
+                                        try:
+					    R = a*b*c/(4*math.sqrt(S*(S-a)*(S-b)*(S-c)))
+                                        except:
+                                            continue
 					if R > D:
 						continue
 					Mcc[(y,x,Eid)] = set([y,x,Eid])	# 3-point Mcc
