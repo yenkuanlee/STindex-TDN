@@ -234,9 +234,9 @@ def on_message(client, userdata, msg):
 			RedNumber = len(Mcc[mcc]&RedIndex)
 			BlackNumber = Pnumber - RedNumber
 			if BlackNumber == 0 :
-				if Eid in Mcc[mcc]:
-					WriteOut(str(mcc))
-					WriteOut(str(Mcc[mcc]))
+				#if Eid in Mcc[mcc]:
+				#	WriteOut(str(mcc))
+				#	WriteOut(str(Mcc[mcc]))
 					#print mcc
 					#print Mcc[mcc]
 				continue
@@ -266,5 +266,5 @@ def on_message(client, userdata, msg):
 client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
-client.connect("localhost", 1883, 60)
+client.connect("localhost", 1883, 60000)
 client.loop_forever()
