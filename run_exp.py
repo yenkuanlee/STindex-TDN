@@ -27,12 +27,11 @@ for x in Tlist:
     try:
         if x[0]!="" and x[1] != "" or x[2]!="":
             #os.system("python Mmqtt.py 140.92.143.212 test "+x[0]+"#"+x[1]+"#"+x[2])
-            client.publish("STevent", x[0]+"#"+x[1]+"#"+x[2], qos=0)
-            time.sleep(0.001)
-            #cnt += 1
-            #print cnt
+            client.publish("test", x[0]+"#"+x[1]+"#"+x[2], qos=1)
+	    cnt += 1
+            #time.sleep(0.001)
+
     except:
         pass
 
-for i in range(1000):
-    client.publish("test", "Done", qos=0)
+print cnt
