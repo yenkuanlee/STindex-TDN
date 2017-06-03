@@ -2,6 +2,7 @@ import paho.mqtt.client as mqtt
 import time
 import datetime
 import math
+import os
 from math import radians, cos, sin, asin, sqrt
 
 EventDict = dict()
@@ -92,19 +93,25 @@ def GetNewMcc(p,OldMcc):
 			return OldMcc
 		else:
 '''
-			
+
+def WriteOut(text):
+	os.system("echo '"+text+"' >> OutputBaseline.txt")
+
 EEid = 0
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
 	global EEid
 	if msg.topic=='test':
-		print str(msg.payload)
+		#print str(msg.payload)
+		#WriteOut(str(msg.payload))
+		exit(0)
 	elif msg.topic=='STevent':
-		print time.time()
+		#print time.time()
+		WriteOut("Time : "+str(time.time()))
 		# Rule
 		T = 1
-		D = 1000
-		N = 2
+		D = 100
+		N = 10
 
 		# Initial
 		global EventDict
@@ -113,9 +120,12 @@ def on_message(client, userdata, msg):
 		BlackIndex = set()
 		Neighber = set()
 		tmp = str(msg.payload).split("#")
-		Lon = float(tmp[0])
-		Lat = float(tmp[1])
-		Time = tmp[2]
+                try:
+		    Lon = float(tmp[0])
+		    Lat = float(tmp[1])
+		    Time = tmp[2]
+                except:
+                    return
 
 		#Eid = long(str(time.time()).replace(".",""))
 		Eid = long(EEid)
@@ -196,7 +206,10 @@ def on_message(client, userdata, msg):
 						Mcc[diameter] = set([y,x,eid])	# 3 point in 2-point Mcc
 					else:
 						S = (a+b+c)/2
-						R = a*b*c/(4*math.sqrt(S*(S-a)*(S-b)*(S-c)))
+                                                try:
+						    R = a*b*c/(4*math.sqrt(S*(S-a)*(S-b)*(S-c)))
+                                                except:
+                                                    continue
 						if R > D:
 							continue
 						Mcc[(y,x,eid)] = set([y,x,eid])	# 3-point Mcc
@@ -222,13 +235,17 @@ def on_message(client, userdata, msg):
 			BlackNumber = Pnumber - RedNumber
 			if BlackNumber == 0 :
 				if Eid in Mcc[mcc]:
-					print mcc
-					print Mcc[mcc]
+					WriteOut(str(mcc))
+					WriteOut(str(Mcc[mcc]))
+					#print mcc
+					#print Mcc[mcc]
 				continue
 			if RedNumber / BlackNumber >= N:
 				if Eid in Mcc[mcc]:
-					print mcc
-					print Mcc[mcc]
+					WriteOut(str(mcc))
+					WriteOut(str(Mcc[mcc]))
+					#print mcc
+					#print Mcc[mcc]
 
 
 

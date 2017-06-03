@@ -1,3 +1,4 @@
+import paho.mqtt.client as paho
 import datetime
 import sys
 import os
@@ -14,7 +15,24 @@ while True:
 
 Tlist.sort(key=lambda tup: tup[3]) 
 
+
+def on_publish(client, userdata, mid):
+        print("mid: "+str(mid))
+
+client = paho.Client()
+client.connect("140.92.143.212", 1883)
+
+cnt = 0
 for x in Tlist:
-    #print x[0],x[1],x[2]
-    os.system("python Mmqtt.py 140.92.143.212 STevent "+x[0]+"#"+x[1]+"#"+x[2])
-    #time.sleep(1)
+    try:
+        if x[0]!="" and x[1] != "" or x[2]!="":
+            #os.system("python Mmqtt.py 140.92.143.212 test "+x[0]+"#"+x[1]+"#"+x[2])
+            client.publish("STevent", x[0]+"#"+x[1]+"#"+x[2], qos=0)
+            time.sleep(0.001)
+            #cnt += 1
+            #print cnt
+    except:
+        pass
+
+for i in range(1000):
+    client.publish("test", "Done", qos=0)
