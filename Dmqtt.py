@@ -110,7 +110,7 @@ def on_message(client, userdata, msg):
 		# Rule
 		T = 1
 		D = 100
-		N = 10
+		N = 5
 
 		# Initial
 		global EventDict
@@ -176,7 +176,7 @@ def on_message(client, userdata, msg):
 		for x in Neighber:
 			Mcc[(x,Eid)] = set([x,Eid])	# 2-point Mcc
 			for y in EventDict[x]["Neighber"]: # Eid > x > y
-				if y not in Neighber:
+				if y not in Neighber or y not in EventDict:
 					continue
 				a = DistanceDict[(x,Eid)]
 				b = DistanceDict[(y,Eid)]
@@ -247,7 +247,7 @@ def on_message(client, userdata, msg):
 					continue
 				Pnumber = len(EventDict[x]["Mcc"][mcc])
 				RedNumber = len(EventDict[x]["Mcc"][mcc]&RedIndex)
-				BlackNumber = Pnumber - RedNumber
+				BlackNumber = len(EventDict[x]["Mcc"][mcc]&BlackIndex)
 				if BlackNumber == 0:
 					###WriteOut(str(mcc))
 					###WriteOut(str(EventDict[x]["Mcc"][mcc]))

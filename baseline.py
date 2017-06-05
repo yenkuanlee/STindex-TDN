@@ -111,7 +111,7 @@ def on_message(client, userdata, msg):
 		# Rule
 		T = 1
 		D = 100
-		N = 10
+		N = 5
 
 		# Initial
 		global EventDict
@@ -178,11 +178,12 @@ def on_message(client, userdata, msg):
 		EventDict[Eid] = dict()
 		EventDict[Eid]["Neighber"] = Neighber
 		for eid in Neighber:
-			for x in Neighber:
-				if eid <= x : continue
+			for x in EventDict[eid]["Neighber"]:
+				if eid <= x or x not in EventDict : continue
 				Mcc[(x,eid)] = set([x,eid])	# 2-point Mcc
 				for y in EventDict[x]["Neighber"]: # eid > x > y
-					if y not in Neighber:
+					if x <= y or y not in EventDict : continue
+					if y not in EventDict[eid]["Neighber"]:
 						continue
 					try:
 						a = DistanceDict[(x,eid)]
@@ -230,9 +231,13 @@ def on_message(client, userdata, msg):
 		
 		# Get Score of Mcc about Eid
 		for mcc in Mcc:
+			if Eid not in Mcc[mcc]:continue
 			Pnumber = len(Mcc[mcc])
 			RedNumber = len(Mcc[mcc]&RedIndex)
-			BlackNumber = Pnumber - RedNumber
+			BlackNumber = len(Mcc[mcc]&BlackIndex)
+			if RedNumber+BlackNumber != Pnumber:
+				print "FFF"
+				exit(0)
 			if BlackNumber == 0 :
 				#if Eid in Mcc[mcc]:
 				#	WriteOut(str(mcc))
@@ -241,11 +246,10 @@ def on_message(client, userdata, msg):
 					#print Mcc[mcc]
 				continue
 			if RedNumber / BlackNumber >= N:
-				if Eid in Mcc[mcc]:
-					WriteOut(str(mcc))
-					WriteOut(str(Mcc[mcc]))
-					#print mcc
-					#print Mcc[mcc]
+				WriteOut(str(mcc))
+				WriteOut(str(Mcc[mcc]))
+				#print mcc
+				#print Mcc[mcc]
 
 
 
