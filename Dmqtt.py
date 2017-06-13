@@ -108,9 +108,9 @@ def on_message(client, userdata, msg):
 		#print time.time()
 		WriteOut("Time : "+str(time.time()))
 		# Rule
-		T = 1
+		T = 30
 		D = 100
-		N = 5
+		N = 10
 
 		# Initial
 		global EventDict
@@ -136,10 +136,10 @@ def on_message(client, userdata, msg):
 			Rflag = False
 			Bflag = False
 			Tdiff = TimeDifference(Time,EventDict[x]["Time"]) #######################
-			if Tdiff <= 1 :
+			if Tdiff <= 1*T :
 				#RedIndex.add(x)
 				Rflag = True
-			elif Tdiff <= 2 and Tdiff > 1 :
+			elif Tdiff <= 2*T and Tdiff > 1*T :
 				#BlackIndex.add(x)
 				Bflag = True
 			else :
@@ -309,5 +309,5 @@ def on_message(client, userdata, msg):
 client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
-client.connect("localhost", 1883, 60000)
+client.connect("localhost", 1883, 0)
 client.loop_forever()
